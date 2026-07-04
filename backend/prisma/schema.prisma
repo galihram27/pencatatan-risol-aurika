@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String // hash bcrypt, bukan plaintext
+  role      String   @default("owner") // owner | admin
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Varian risol (katalog master) — MenuManagement, OrderInput, Reports
+model Product {
+  id    Int     @id @default(autoincrement())
+  name  String
+  price Int // dalam Rupiah (tanpa desimal)
+  desc  String? // deskripsi / bahan, opsional
+
+  orderItems OrderItem[]
+}
+
+// Bahan baku / inventaris — Inventory
+model Material {
+  id    Int    @id @default(autoincrement())
+  name  String
+  stock Float // Float agar mendukung satuan pecahan (Kg, Liter)
+  unit  String // Kg, Pack, Liter, dll
+}
+
+// Direktori pelanggan — Customers, auto-save dari OrderInput
+model Customer {
+  id      Int     @id @default(autoincrement())
+  name    String
+  phone   String  @unique // kunci unik pencarian pelanggan
+  address String?
+
+  orders Order[] // orderCount di frontend = jumlah relasi ini
+}
+
+// Pesanan — ActiveOrders, History, Reports
+model Order {
+  id            Int       @id @default(autoincrement())
+  date          DateTime  @default(now())
+  completedDate DateTime? // diisi saat status Completed
+  total         Int
+  status        String    @default("Pending") // Pending | Completed
+  paymentMethod String    @default("Transfer BCA")
+  paymentStatus String    @default("Belum Lunas") // Belum Lunas | Lunas
+
+  // Snapshot data pelanggan pada saat pesanan dibuat
+  customerName    String
+  customerPhone   String
+  customerAddress String?
+  customerNote    String?
+
+  // Relasi opsional ke direktori pelanggan
+  customerId Int?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  items OrderItem[]
+}
+
+// Item dalam pesanan — snapshot produk saat transaksi
+model OrderItem {
+  id    Int    @id @default(autoincrement())
+  name  String // snapshot nama produk
+  price Int // snapshot harga saat transaksi
+  qty   Int
+
+  orderId Int
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // Referensi opsional ke produk (SetNull agar produk boleh dihapus tanpa merusak riwayat)
+  productId Int?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+}
