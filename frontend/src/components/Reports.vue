@@ -22,7 +22,7 @@ const itemStats = computed(() => {
 <template>
   <div class="h-full flex flex-col">
     <header class="mb-8">
-      <h2 class="text-3xl font-extrabold text-slate-800">Laporan Penjualan</h2>
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-800">Laporan Penjualan</h2>
       <p class="text-slate-500 mt-1 font-medium">Ringkasan analitik dan rekapitulasi pendapatan otomatis.</p>
     </header>
 
@@ -50,8 +50,8 @@ const itemStats = computed(() => {
       <div class="px-6 py-5 border-b border-slate-100">
         <h3 class="font-extrabold text-slate-800 text-lg">Analitik Produk Terjual</h3>
       </div>
-      <div class="flex-1 overflow-y-auto">
-        <table class="w-full text-left">
+      <div class="flex-1 overflow-auto">
+        <table class="w-full text-left min-w-[480px]">
           <thead class="bg-slate-50/50 sticky top-0">
             <tr>
               <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama Varian Risol</th>

@@ -18,12 +18,12 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="flex gap-8 h-full">
-    <div class="flex-1 flex flex-col h-full overflow-hidden">
+  <div class="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:h-full">
+    <div class="flex-1 flex flex-col lg:h-full lg:overflow-hidden">
       <header class="mb-6">
-        <h2 class="text-3xl font-extrabold text-slate-800">Pilih Menu</h2>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-800">Pilih Menu</h2>
       </header>
-      <div class="flex-1 overflow-y-auto pb-8 pr-2 grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 content-start">
+      <div class="flex-1 lg:overflow-y-auto pb-4 lg:pb-8 lg:pr-2 grid grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6 content-start">
         <div v-for="product in store.products" :key="product.id" class="group bg-white p-4 rounded-[24px] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
           <div class="h-40 bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-[20px] mb-4 flex items-center justify-center overflow-hidden">
             <img v-if="product.image" :src="product.image" :alt="product.name" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
@@ -45,13 +45,13 @@ const handleSubmit = async () => {
       </div>
     </div>
 
-    <div class="w-[420px] bg-white p-7 rounded-[32px] shadow-2xl border border-slate-100 flex flex-col h-full z-10">
+    <div class="w-full lg:w-[420px] shrink-0 bg-white p-5 sm:p-7 rounded-[32px] shadow-2xl border border-slate-100 flex flex-col lg:h-full z-10">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-extrabold text-slate-800">Keranjang</h2>
         <span class="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-xs font-bold">{{ store.cart.length }} Item</span>
       </div>
       
-      <div class="flex-1 overflow-y-auto pr-2 space-y-3 mb-4">
+      <div class="flex-1 overflow-y-auto pr-2 space-y-3 mb-4 max-h-[45vh] lg:max-h-none">
         <div v-for="item in store.cart" :key="item.id" class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
           <div class="flex-1">
             <h4 class="font-bold text-slate-800 text-sm mb-0.5">{{ item.name }}</h4>

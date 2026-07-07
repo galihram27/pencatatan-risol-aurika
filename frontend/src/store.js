@@ -61,6 +61,8 @@ function normalizeCustomer(c) {
 
 export const store = reactive({
   activeMenu: 'Order Input',
+  // Kontrol drawer sidebar di tampilan mobile.
+  sidebarOpen: false,
 
   // --- AUTENTIKASI ---
   // Token & user dibaca dari localStorage agar owner tidak perlu login ulang.

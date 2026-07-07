@@ -47,12 +47,12 @@ const deleteItem = async (id) => {
 </script>
 
 <template>
-  <div class="flex gap-8 h-full">
-    
+  <div class="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:h-full">
+
     <!-- Daftar Menu -->
-    <div class="flex-1 overflow-y-auto pr-2 flex flex-col">
+    <div class="flex-1 lg:overflow-y-auto lg:pr-2 flex flex-col">
       <header class="mb-6">
-        <h2 class="text-3xl font-extrabold text-slate-800">Katalog Master</h2>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-800">Katalog Master</h2>
         <p class="text-slate-500 mt-1 font-medium">Kelola ketersediaan varian menu Anda di sini.</p>
       </header>
       
@@ -83,7 +83,7 @@ const deleteItem = async (id) => {
     </div>
 
     <!-- Form Tambah/Edit -->
-    <div class="w-[420px] bg-white p-7 rounded-[32px] shadow-[0_8px_40px_rgba(0,0,0,0.04)] border border-slate-100 h-fit">
+    <div class="w-full lg:w-[420px] shrink-0 bg-white p-5 sm:p-7 rounded-[32px] shadow-[0_8px_40px_rgba(0,0,0,0.04)] border border-slate-100 h-fit">
       <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-5">
         <div :class="['w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg', isEditing ? 'bg-blue-500 shadow-blue-500/30' : 'bg-orange-500 shadow-orange-500/30']">
           <i :class="isEditing ? 'fa-solid fa-pen' : 'fa-solid fa-plus'"></i>

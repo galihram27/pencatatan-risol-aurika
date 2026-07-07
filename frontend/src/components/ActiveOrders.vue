@@ -15,7 +15,7 @@ const cancelOrder = async (order) => {
 <template>
   <div class="h-full flex flex-col">
     <header class="mb-8">
-      <h2 class="text-3xl font-extrabold text-slate-800">Active Orders</h2>
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-800">Active Orders</h2>
       <p class="text-slate-500 mt-1 font-medium">Lakukan verifikasi pembayaran dan proses pesanan dapur.</p>
     </header>
 

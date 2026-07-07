@@ -20,21 +20,31 @@ async function handleLogout() {
 </script>
 
 <template>
-  <aside class="w-[280px] bg-white flex flex-col justify-between z-20 border-r border-slate-200/60 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+  <!-- Overlay gelap: hanya muncul saat drawer terbuka di mobile -->
+  <div v-if="store.sidebarOpen" @click="store.sidebarOpen = false"
+       class="fixed inset-0 bg-black/40 z-30 lg:hidden"></div>
+
+  <aside :class="['fixed inset-y-0 left-0 lg:static w-[280px] max-w-[85vw] bg-white flex flex-col justify-between z-40 border-r border-slate-200/60 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-transform duration-300 ease-out lg:translate-x-0',
+                  store.sidebarOpen ? 'translate-x-0' : '-translate-x-full']">
     <div class="flex-1 overflow-y-auto">
-      <div class="h-28 flex items-center px-8 border-b border-slate-100 sticky top-0 bg-white z-10">
+      <div class="h-28 flex items-center justify-between px-8 border-b border-slate-100 sticky top-0 bg-white z-10">
         <h1 class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-500 shadow-inner">
             <i class="fa-solid fa-book-open text-lg"></i>
           </div>
           Aurika
         </h1>
+        <!-- Tombol tutup drawer (mobile) -->
+        <button @click="store.sidebarOpen = false" aria-label="Tutup menu"
+          class="lg:hidden w-9 h-9 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
       </div>
       
       <nav class="p-6 space-y-1.5">
         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 px-2">Menu Navigasi</p>
         
-        <button v-for="menu in menus" :key="menu.name" @click="store.activeMenu = menu.name"
+        <button v-for="menu in menus" :key="menu.name" @click="store.activeMenu = menu.name; store.sidebarOpen = false"
           :class="['w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-300 ease-out group', 
                    store.activeMenu === menu.name 
                    ? 'bg-orange-500 text-white shadow-[0_8px_20px_rgba(249,115,22,0.3)] translate-x-1' 

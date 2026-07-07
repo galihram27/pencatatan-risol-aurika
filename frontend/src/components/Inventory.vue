@@ -24,10 +24,10 @@ const saveItem = () => {
 </script>
 
 <template>
-  <div class="flex gap-8 h-full">
-    <div class="flex-1 overflow-y-auto pr-2 flex flex-col">
+  <div class="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:h-full">
+    <div class="flex-1 lg:overflow-y-auto lg:pr-2 flex flex-col">
       <header class="mb-6">
-        <h2 class="text-3xl font-extrabold text-slate-800">Inventaris Bahan</h2>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-800">Inventaris Bahan</h2>
         <p class="text-slate-500 mt-1 font-medium">Pantau stok bahan baku untuk keperluan restock.</p>
       </header>
       
@@ -51,7 +51,7 @@ const saveItem = () => {
     </div>
 
     <!-- Form Input Bahan -->
-    <div class="w-[360px] bg-white p-7 rounded-[32px] shadow-2xl border border-slate-100 h-fit">
+    <div class="w-full lg:w-[360px] shrink-0 bg-white p-5 sm:p-7 rounded-[32px] shadow-2xl border border-slate-100 h-fit">
       <h2 class="text-xl font-extrabold text-slate-800 mb-6 border-b border-slate-100 pb-4">{{ isEditing ? 'Edit Bahan' : 'Tambah Bahan' }}</h2>
       <div class="space-y-4">
         <div>

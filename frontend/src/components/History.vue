@@ -4,9 +4,9 @@ import { store } from '../store.js'
 
 <template>
   <div class="h-full flex flex-col">
-    <header class="mb-8 flex justify-between items-end">
+    <header class="mb-8 flex flex-wrap gap-3 justify-between items-end">
       <div>
-        <h2 class="text-3xl font-extrabold text-slate-800">Riwayat Selesai</h2>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-800">Riwayat Selesai</h2>
         <p class="text-slate-500 mt-1 font-medium">Arsip transaksi yang telah berhasil diselesaikan.</p>
       </div>
       <div class="bg-green-50 px-4 py-2 rounded-xl border border-green-100">
