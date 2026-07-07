@@ -11,22 +11,20 @@ const prisma = new PrismaClient({ adapter })
 // Kredensial diambil dari .env agar tidak hard-code. Ada nilai default aman untuk dev.
 const username = (process.env.SEED_USERNAME || 'admin').trim()
 const plainPassword = process.env.SEED_PASSWORD || 'admin123'
-const role = process.env.SEED_ROLE || 'owner'
 
 async function main() {
   const password = await bcrypt.hash(plainPassword, 10)
 
-  // upsert: jika username sudah ada, perbarui password/role; jika belum, buat baru.
+  // upsert: jika username sudah ada, perbarui password; jika belum, buat baru.
   const user = await prisma.user.upsert({
     where: { username },
-    update: { password, role },
-    create: { username, password, role },
+    update: { password },
+    create: { username, password },
   })
 
   console.log('✅ Akun siap dipakai login:')
   console.log(`   username : ${user.username}`)
   console.log(`   password : ${plainPassword}`)
-  console.log(`   role     : ${user.role}`)
   console.log('⚠️  Ganti password default ini untuk penggunaan nyata.')
 
   // Katalog awal — hanya diisi bila tabel masih kosong, agar re-seed tidak menduplikasi.

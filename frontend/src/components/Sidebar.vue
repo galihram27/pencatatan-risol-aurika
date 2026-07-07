@@ -70,7 +70,6 @@ async function handleLogout() {
         </div>
         <div class="min-w-0">
           <p class="text-sm font-bold text-slate-700 truncate">{{ store.currentUser.username }}</p>
-          <p class="text-[11px] font-semibold text-slate-400 capitalize">{{ store.currentUser.role }}</p>
         </div>
       </div>
       <button @click="handleLogout"

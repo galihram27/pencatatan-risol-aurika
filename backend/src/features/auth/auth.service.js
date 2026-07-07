@@ -4,7 +4,7 @@ import { signToken } from '../../lib/token.js'
 import { AppError, badRequest } from '../../lib/errors.js'
 
 // Bentuk data user yang aman dikirim ke client (tanpa password).
-const toPublic = (user) => ({ id: user.id, username: user.username, role: user.role })
+const toPublic = (user) => ({ id: user.id, username: user.username })
 
 export const authService = {
   async login({ username, password }) {

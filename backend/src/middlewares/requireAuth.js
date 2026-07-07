@@ -8,7 +8,7 @@ export function requireAuth(req, res, next) {
     const header = req.headers.authorization || ''
     const token = header.startsWith('Bearer ') ? header.slice(7) : null
     if (!token) throw new AppError('Token tidak ditemukan', 401)
-    req.user = verifyToken(token) // { sub, username, role, iat, exp }
+    req.user = verifyToken(token) // { sub, username, iat, exp }
     next()
   } catch (err) {
     if (err instanceof AppError) return next(err)
