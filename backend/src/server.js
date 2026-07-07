@@ -8,21 +8,24 @@ import materialRoutes from './features/material/material.routes.js'
 import customerRoutes from './features/customer/customer.routes.js'
 import orderRoutes from './features/order/order.routes.js'
 import { errorHandler } from './middlewares/errorHandler.js'
+import { requireAuth } from './middlewares/requireAuth.js'
 
 const app = express()
 
 app.use(cors())
-app.use(express.json())
+// Batas payload dinaikkan agar muat gambar produk base64 (maks ~2MB → ~2.7MB encoded).
+app.use(express.json({ limit: '5mb' }))
 
 // Health check
 app.get('/', (req, res) => res.json({ status: 'ok', service: 'Risol Aurika API' }))
 
 // Feature routes
+// Auth terbuka (login). Rute data dilindungi requireAuth — hanya owner yang sudah login.
 app.use('/api/auth', authRoutes)
-app.use('/api/products', productRoutes)
-app.use('/api/materials', materialRoutes)
-app.use('/api/customers', customerRoutes)
-app.use('/api/orders', orderRoutes)
+app.use('/api/products', requireAuth, productRoutes)
+app.use('/api/materials', requireAuth, materialRoutes)
+app.use('/api/customers', requireAuth, customerRoutes)
+app.use('/api/orders', requireAuth, orderRoutes)
 
 // 404 & error handling
 app.use((req, res) => res.status(404).json({ message: 'Endpoint tidak ditemukan' }))

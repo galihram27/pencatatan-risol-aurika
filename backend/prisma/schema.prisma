@@ -26,6 +26,7 @@ model Product {
   name  String
   price Int // dalam Rupiah (tanpa desimal)
   desc  String? // deskripsi / bahan, opsional
+  image String? // gambar produk dalam bentuk data URL base64 (opsional)
 
   orderItems OrderItem[]
 }

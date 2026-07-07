@@ -6,8 +6,8 @@ const paymentMethods = ['Transfer BCA', 'Transfer Mandiri', 'GoPay', 'OVO', 'Cas
 const showSuccess = ref(false)
 const showError = ref(false)
 
-const handleSubmit = () => {
-  if (store.submitOrder()) {
+const handleSubmit = async () => {
+  if (await store.submitOrder()) {
     showSuccess.value = true
     setTimeout(() => { showSuccess.value = false }, 2500)
   } else {

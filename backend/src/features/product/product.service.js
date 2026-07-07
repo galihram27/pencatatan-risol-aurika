@@ -12,17 +12,18 @@ export const productService = {
     return product
   },
 
-  create({ name, price, desc }) {
+  create({ name, price, desc, image }) {
     if (!name?.trim()) throw badRequest('Nama produk wajib diisi')
     if (price == null || Number(price) <= 0) throw badRequest('Harga harus lebih dari 0')
     return productRepository.create({
       name: name.trim(),
       price: Number(price),
       desc: desc?.trim() || null,
+      image: image || null,
     })
   },
 
-  async update(id, { name, price, desc }) {
+  async update(id, { name, price, desc, image }) {
     await this.get(id) // memastikan produk ada
     const data = {}
     if (name !== undefined) {
@@ -34,6 +35,7 @@ export const productService = {
       data.price = Number(price)
     }
     if (desc !== undefined) data.desc = desc?.trim() || null
+    if (image !== undefined) data.image = image || null
     return productRepository.update(id, data)
   },
 

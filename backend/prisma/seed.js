@@ -28,6 +28,30 @@ async function main() {
   console.log(`   password : ${plainPassword}`)
   console.log(`   role     : ${user.role}`)
   console.log('⚠️  Ganti password default ini untuk penggunaan nyata.')
+
+  // Katalog awal — hanya diisi bila tabel masih kosong, agar re-seed tidak menduplikasi.
+  if ((await prisma.product.count()) === 0) {
+    await prisma.product.createMany({
+      data: [
+        { name: 'Choco Cheese', price: 5000, desc: 'Risol cokelat & keju lumer.' },
+        { name: 'Smoke Beef Mayo', price: 5000, desc: 'Daging asap, telur, keju & mayo.' },
+        { name: 'Spicy Chicken', price: 5000, desc: 'Ayam suwir bumbu pedas.' },
+        { name: 'Creamy Mushroom Smoke Beef', price: 9000, desc: 'Jamur creamy & daging asap.' },
+      ],
+    })
+    console.log('✅ Produk awal ditambahkan.')
+  }
+
+  if ((await prisma.material.count()) === 0) {
+    await prisma.material.createMany({
+      data: [
+        { name: 'Tepung Terigu Premium', stock: 5, unit: 'Kg' },
+        { name: 'Daging Asap', stock: 15, unit: 'Pack' },
+        { name: 'Mayones', stock: 4, unit: 'Liter' },
+      ],
+    })
+    console.log('✅ Bahan baku awal ditambahkan.')
+  }
 }
 
 main()

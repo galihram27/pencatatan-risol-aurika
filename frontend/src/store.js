@@ -1,13 +1,63 @@
-import { reactive, watch } from 'vue'
+import { reactive } from 'vue'
 
 // Alamat API backend. Bisa dioverride lewat VITE_API_URL saat build/dev.
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 const TOKEN_KEY = 'aurika_token'
 const USER_KEY = 'aurika_user'
 
-// Kunci & field data yang dipersist ke localStorage agar tidak hilang saat refresh.
-const DATA_KEY = 'aurika_data'
-const PERSISTED_KEYS = ['products', 'materials', 'customers', 'orders']
+// Helper fetch terpusat: menempelkan token, header JSON, & penanganan error seragam.
+// Semua data kini disimpan di server (database), bukan localStorage, agar konsisten
+// di semua perangkat/pengguna.
+async function apiFetch(path, options = {}) {
+  const headers = { ...(options.headers || {}) }
+  if (options.body !== undefined) headers['Content-Type'] = 'application/json'
+  if (store.token) headers['Authorization'] = `Bearer ${store.token}`
+
+  const res = await fetch(`${API_URL}${path}`, { ...options, headers })
+
+  // Token kedaluwarsa / tidak valid → paksa login ulang.
+  if (res.status === 401) {
+    store.logout()
+    throw new Error('Sesi berakhir. Silakan login ulang.')
+  }
+  if (res.status === 204) return null
+
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.message || 'Terjadi kesalahan pada server.')
+  return data
+}
+
+// --- NORMALISASI BENTUK DATA SERVER → BENTUK YANG DIPAKAI UI ---
+// Pesanan: server menyimpan snapshot pelanggan sebagai field datar; UI memakai objek `customer`.
+function normalizeOrder(o) {
+  return {
+    id: o.id,
+    date: new Date(o.date).toLocaleString('id-ID'),
+    completedDate: o.completedDate ? new Date(o.completedDate).toLocaleString('id-ID') : null,
+    total: o.total,
+    status: o.status,
+    paymentMethod: o.paymentMethod,
+    paymentStatus: o.paymentStatus,
+    customer: {
+      name: o.customerName,
+      phone: o.customerPhone,
+      address: o.customerAddress || '',
+      note: o.customerNote || '',
+    },
+    items: o.items || [],
+  }
+}
+
+// Pelanggan: orderCount dihitung server via _count relasi orders.
+function normalizeCustomer(c) {
+  return {
+    id: c.id,
+    name: c.name,
+    phone: c.phone,
+    address: c.address || '',
+    orderCount: c._count?.orders ?? 0,
+  }
+}
 
 export const store = reactive({
   activeMenu: 'Order Input',
@@ -18,6 +68,10 @@ export const store = reactive({
   currentUser: JSON.parse(localStorage.getItem(USER_KEY) || 'null'),
   authLoading: false,
   authError: '',
+
+  // Status pemuatan data dari server.
+  dataLoading: false,
+  dataError: '',
 
   get isAuthenticated() {
     return !!this.token
@@ -41,6 +95,7 @@ export const store = reactive({
       this.currentUser = data.user
       localStorage.setItem(TOKEN_KEY, data.token)
       localStorage.setItem(USER_KEY, JSON.stringify(data.user))
+      await this.loadAll()
       return true
     } catch {
       this.authError = 'Tidak dapat terhubung ke server.'
@@ -56,6 +111,12 @@ export const store = reactive({
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USER_KEY)
     this.activeMenu = 'Order Input'
+    // Kosongkan data di memori agar tidak bocor ke sesi berikutnya.
+    this.products = []
+    this.materials = []
+    this.customers = []
+    this.orders = []
+    this.cart = []
   },
 
   // Verifikasi token tersimpan saat aplikasi dibuka; logout otomatis bila kedaluwarsa.
@@ -67,9 +128,12 @@ export const store = reactive({
       })
       if (res.status === 401) {
         this.logout()
-      } else if (res.ok) {
+        return
+      }
+      if (res.ok) {
         this.currentUser = await res.json()
         localStorage.setItem(USER_KEY, JSON.stringify(this.currentUser))
+        await this.loadAll()
       }
       // Error jaringan lain: biarkan sesi tetap ada agar tetap bisa dipakai offline.
     } catch {
@@ -77,25 +141,15 @@ export const store = reactive({
     }
   },
 
-
-  products: [
-    { id: 1, name: 'Choco Cheese', price: 5000, desc: 'Risol cokelat & keju lumer.' },
-    { id: 2, name: 'Smoke Beef Mayo', price: 5000, desc: 'Daging asap, telur, keju & mayo.' },
-    { id: 3, name: 'Spicy Chicken', price: 5000, desc: 'Ayam suwir bumbu pedas.' },
-    { id: 4, name: 'Creamy Mushroom Smoke Beef', price: 9000, desc: 'Jamur creamy & daging asap.' }
-  ],
-  
-  materials: [
-    { id: 1, name: 'Tepung Terigu Premium', stock: 5, unit: 'Kg' },
-    { id: 2, name: 'Daging Asap', stock: 15, unit: 'Pack' },
-    { id: 3, name: 'Mayones', stock: 4, unit: 'Liter' }
-  ],
-  
+  // --- DATA (dimuat dari server) ---
+  products: [],
+  materials: [],
   customers: [],
+  orders: [],
+
   cart: [],
   customer: { name: '', phone: '', address: '', note: '' },
   paymentMethod: 'Transfer BCA',
-  orders: [],
 
   // Getters
   get activeOrders() { return this.orders.filter(o => o.status === 'Pending') },
@@ -107,27 +161,74 @@ export const store = reactive({
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value)
   },
 
-  // --- KELOLA PRODUK ---
-  saveProduct(product) {
-    if (product.id) {
-      const index = this.products.findIndex(p => p.id === product.id)
-      if (index !== -1) Object.assign(this.products[index], product)
-    } else this.products.push({ ...product, id: Date.now() })
+  // --- PEMUATAN DATA ---
+  async loadProducts() { this.products = await apiFetch('/api/products') },
+  async loadMaterials() { this.materials = await apiFetch('/api/materials') },
+  async loadCustomers() { this.customers = (await apiFetch('/api/customers')).map(normalizeCustomer) },
+  async loadOrders() { this.orders = (await apiFetch('/api/orders')).map(normalizeOrder) },
+
+  async loadAll() {
+    this.dataLoading = true
+    this.dataError = ''
+    try {
+      await Promise.all([this.loadProducts(), this.loadMaterials(), this.loadCustomers(), this.loadOrders()])
+    } catch (e) {
+      this.dataError = e.message
+    } finally {
+      this.dataLoading = false
+    }
   },
-  deleteProduct(id) {
-    this.products = this.products.filter(p => p.id !== id)
-    this.cart = this.cart.filter(item => item.id !== id)
+
+  // --- KELOLA PRODUK ---
+  async saveProduct(product) {
+    const body = {
+      name: product.name,
+      price: Number(product.price),
+      desc: product.desc,
+      image: product.image || null,
+    }
+    try {
+      if (product.id) {
+        await apiFetch(`/api/products/${product.id}`, { method: 'PUT', body: JSON.stringify(body) })
+      } else {
+        await apiFetch('/api/products', { method: 'POST', body: JSON.stringify(body) })
+      }
+      await this.loadProducts()
+    } catch (e) {
+      alert(e.message)
+    }
+  },
+  async deleteProduct(id) {
+    try {
+      await apiFetch(`/api/products/${id}`, { method: 'DELETE' })
+      this.cart = this.cart.filter(item => item.id !== id)
+      await this.loadProducts()
+    } catch (e) {
+      alert(e.message)
+    }
   },
 
   // --- KELOLA INVENTARIS BAHAN BAKU ---
-  saveMaterial(material) {
-    if (material.id) {
-      const index = this.materials.findIndex(m => m.id === material.id)
-      if (index !== -1) Object.assign(this.materials[index], material)
-    } else this.materials.push({ ...material, id: Date.now() })
+  async saveMaterial(material) {
+    const body = { name: material.name, stock: Number(material.stock), unit: material.unit }
+    try {
+      if (material.id) {
+        await apiFetch(`/api/materials/${material.id}`, { method: 'PUT', body: JSON.stringify(body) })
+      } else {
+        await apiFetch('/api/materials', { method: 'POST', body: JSON.stringify(body) })
+      }
+      await this.loadMaterials()
+    } catch (e) {
+      alert(e.message)
+    }
   },
-  deleteMaterial(id) {
-    this.materials = this.materials.filter(m => m.id !== id)
+  async deleteMaterial(id) {
+    try {
+      await apiFetch(`/api/materials/${id}`, { method: 'DELETE' })
+      await this.loadMaterials()
+    } catch (e) {
+      alert(e.message)
+    }
   },
 
   // --- TRANSAKSI & KERANJANG ---
@@ -141,52 +242,59 @@ export const store = reactive({
     if (item.qty <= 0) this.cart = this.cart.filter(i => i.id !== item.id)
   },
 
-  submitOrder() {
+  async submitOrder() {
     if (this.cart.length === 0 || !this.customer.name || !this.customer.phone) {
       return false
     }
-
-    // Auto-save ke Customer Directory
-    let existingCust = this.customers.find(c => c.phone === this.customer.phone)
-    if (!existingCust) {
-      this.customers.push({ id: `CUST-${Date.now()}`, ...this.customer, orderCount: 1 })
-    } else {
-      existingCust.orderCount++
-      if (this.customer.address) existingCust.address = this.customer.address
+    try {
+      await apiFetch('/api/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          customer: { ...this.customer },
+          items: this.cart.map(i => ({ productId: i.id, qty: i.qty })),
+          paymentMethod: this.paymentMethod,
+        }),
+      })
+      this.cart = []
+      this.customer = { name: '', phone: '', address: '', note: '' }
+      this.paymentMethod = 'Transfer BCA'
+      // Pesanan baru juga bisa membuat/menaikkan pelanggan → segarkan keduanya.
+      await Promise.all([this.loadOrders(), this.loadCustomers()])
+      return true
+    } catch (e) {
+      alert(e.message)
+      return false
     }
-
-    this.orders.push({
-      id: `ORD-${Date.now()}`,
-      date: new Date().toLocaleString('id-ID'),
-      customer: { ...this.customer },
-      items: JSON.parse(JSON.stringify(this.cart)),
-      total: this.cartTotal,
-      status: 'Pending',
-      paymentMethod: this.paymentMethod,
-      paymentStatus: 'Belum Lunas'
-    })
-    
-    this.cart = []
-    this.customer = { name: '', phone: '', address: '', note: '' }
-    this.paymentMethod = 'Transfer BCA'
-    return true
   },
 
   // --- MANAJEMEN PESANAN AKTIF ---
-  verifyPayment(orderId) {
-    const order = this.orders.find(o => o.id === orderId)
-    if (order) order.paymentStatus = 'Lunas'
-  },
-  markAsDone(orderId) {
-    const order = this.orders.find(o => o.id === orderId)
-    if (order) {
-      if (order.paymentStatus !== 'Lunas') return alert('Pesanan tidak bisa diselesaikan karena BELUM LUNAS!')
-      order.status = 'Completed'
-      order.completedDate = new Date().toLocaleString('id-ID')
+  async verifyPayment(orderId) {
+    try {
+      await apiFetch(`/api/orders/${orderId}/verify-payment`, { method: 'PATCH' })
+      await this.loadOrders()
+    } catch (e) {
+      alert(e.message)
     }
   },
-  cancelOrder(orderId) {
-    this.orders = this.orders.filter(o => o.id !== orderId)
+  async markAsDone(orderId) {
+    const order = this.orders.find(o => o.id === orderId)
+    if (order && order.paymentStatus !== 'Lunas') {
+      return alert('Pesanan tidak bisa diselesaikan karena BELUM LUNAS!')
+    }
+    try {
+      await apiFetch(`/api/orders/${orderId}/complete`, { method: 'PATCH' })
+      await this.loadOrders()
+    } catch (e) {
+      alert(e.message)
+    }
+  },
+  async cancelOrder(orderId) {
+    try {
+      await apiFetch(`/api/orders/${orderId}`, { method: 'DELETE' })
+      await this.loadOrders()
+    } catch (e) {
+      alert(e.message)
+    }
   },
 
   // Pilih pelanggan dari Customer Directory
@@ -195,31 +303,12 @@ export const store = reactive({
   },
 
   // Hapus pelanggan dari direktori
-  deleteCustomer(id) {
-    this.customers = this.customers.filter(c => c.id !== id)
-  }
-})
-
-// --- PERSISTENSI DATA (localStorage) ---
-// Muat data tersimpan saat aplikasi dibuka, timpa nilai default bila ada.
-try {
-  const saved = JSON.parse(localStorage.getItem(DATA_KEY) || 'null')
-  if (saved) {
-    for (const key of PERSISTED_KEYS) {
-      if (Array.isArray(saved[key])) store[key] = saved[key]
+  async deleteCustomer(id) {
+    try {
+      await apiFetch(`/api/customers/${id}`, { method: 'DELETE' })
+      await this.loadCustomers()
+    } catch (e) {
+      alert(e.message)
     }
-  }
-} catch {
-  /* abaikan data rusak: pakai nilai default */
-}
-
-// Simpan otomatis setiap kali data berubah.
-watch(
-  () => PERSISTED_KEYS.map(key => store[key]),
-  () => {
-    const data = {}
-    for (const key of PERSISTED_KEYS) data[key] = store[key]
-    localStorage.setItem(DATA_KEY, JSON.stringify(data))
   },
-  { deep: true }
-)
+})
